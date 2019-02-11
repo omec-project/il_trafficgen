@@ -1,0 +1,106 @@
+app/pktgen-constants.h:
+----------------------
+enum {
+	DEFAULT_PKT_BURST       = 64,	/* Increasing this number consumes memory very fast */
+	...
+	DEFAULT_RX_DESC         = (DEFAULT_PKT_BURST * 8 * 2 * 2),
+//	DEFAULT_TX_DESC         = DEFAULT_RX_DESC * 2,
+	DEFAULT_TX_DESC         = DEFAULT_RX_DESC * 1,
+	...
+	MAX_MBUFS_PER_PORT      = (DEFAULT_TX_DESC * 8),/* number of buffers to support per port */
+	MAX_SPECIAL_MBUFS       = 64,
+	MBUF_CACHE_SIZE         = (MAX_MBUFS_PER_PORT / 8),
+
+	DEFAULT_PRIV_SIZE       = 0,
+/* See: http://dpdk.org/dev/patchwork/patch/4479/ */
+	MBUF_SIZE				= RTE_MBUF_DEFAULT_BUF_SIZE + DEFAULT_PRIV_SIZE,
+	NUM_Q                   = 8,	/**< Number of cores per port. */
+};
+
+pktgen/app/pktgen.h:
+-------------------
+/* Ethernet addresses of ports */
+243 typedef struct pktgen_s {
+	...
+	uint16_t nb_rxd;	/**< Number of receive descriptors */
+	uint16_t nb_txd;	/**< Number of transmit descriptors */
+	...
+} pktgen_t;
+
+app/pktgen-latency.h:
+-------------------
+#define LATENCY_MAGIC   (('L' << 8) + 'y')
+#define DEFAULT_JITTER_THRESHOLD    (50)	/**< usec */
+
+app/pktgen.c:
+------------
+35 pktgen_t pktgen;
+233 pktgen_latency_apply(port_info_t *info __rte_unused,
+		     struct rte_mbuf **mbufs, int cnt)
+{
+	...
+		latency = pktgen_latency_pointer(info, mbufs[i]);
+
+		latency->timestamp  = rte_rdtsc_precise();
+		latency->magic      = LATENCY_MAGIC;
+	...
+}
+
+app/pktgen-port-cfg.h:
+---------------------
+138 typedef struct port_info_s {
+	...
+	uint16_t nb_mbufs;	/**< Number of mbufs in the system */
+	uint16_t pad1;
+	uint64_t max_latency;	/**< TX Latency sequence */
+	uint64_t avg_latency;	/**< Latency delta in clock ticks */
+	uint64_t min_latency;	/**< RX Latency sequence */
+	uint32_t magic_errors;
+	uint32_t latency_nb_pkts;
+	uint64_t jitter_threshold;
+	uint64_t jitter_threshold_clks;
+	uint64_t jitter_count;
+	...
+} port_info_t;
+
+app/pktgen-port-cfg.c:
+----------------------
+219 pktgen_config_ports(void) {
+	port_info_t     *info;
+	...
+	info->jitter_threshold = DEFAULT_JITTER_THRESHOLD;
+	if ( (ret = rte_eth_dev_configure(pid, rt.rx, rt.tx, &info->port_conf)) < 0)
+		pktgen_log_panic(
+			"Cannot configure device: port=%d, Num queues %d,%d (%d)%s",
+			pid, rt.rx, rt.tx, errno, rte_strerror(-ret));
+	...
+	info->q[q].rx_mp = pktgen_mbuf_pool_create("Default RX", pid, q,
+						   info->nb_mbufs, sid, cache_size);
+	...
+	334 ret = rte_eth_rx_queue_setup(pid, q, pktgen.nb_rxd, sid,...)
+	...
+	}
+
+pktgen-main.c:
+-------------
+335 main(int argc, char **argv) {
+357-361
+		pktgen.flags            = PRINT_LABELS_FLAG;
+		pktgen.ident            = 0x1234;
+		pktgen.nb_rxd           = DEFAULT_RX_DESC;
+		pktgen.nb_txd           = DEFAULT_TX_DESC;
+		pktgen.nb_ports_per_page = DEFAULT_PORTS_PER_PAGE;
+
+423-429	pktgen_log_info(
+			">>> Packet Burst %d, RX Desc %d, TX Desc %d, mbufs/port %d, mbuf cache %d",
+			DEFAULT_PKT_BURST,
+			DEFAULT_RX_DESC,
+			DEFAULT_TX_DESC,
+			MAX_MBUFS_PER_PORT,
+			MBUF_CACHE_SIZE);
+...
+431     /* Configure and initialize the ports */
+432     pktgen_config_ports();
+}
+
+
