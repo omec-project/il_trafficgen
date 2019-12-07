@@ -91,6 +91,7 @@ Execution
 =========================
 Note: Configure and Run data-plane application before start sending traffic by il_trafficgen generator.
 
+SCREEN MODE
 Run 'il_nperf.sh' located in /opt/il_trafficgen/pktgen
 
 	1. Start il_trafficgen (as generator)in one terminal
@@ -119,6 +120,34 @@ Run 'il_nperf.sh' located in /opt/il_trafficgen/pktgen
 il_trafficgen stops automatically, after test-duration.
 If test-duration is set to 0, packet transmission happens indefinitely. So, use 'stp' command to stop packet tranmission
 Logs for the current run will be stored in /opt/il_trafficgen/pktgen/autotest/log/il_trafficgen-data-plane_debug_<DD_MM_YYYY_HH_MM_S>.log
+
+CLI MODE
+Run 'il_nperf_cli.sh' located in /opt/il_trafficgen/pktgen
+
+	1. Start il_trafficgen (as generator)in one terminal
+	cd /opt/il_trafficgen/pktgen
+	./il_nperf_cli.sh –g
+
+	wait for the il_trafficgen command prompt to appear on screen.
+
+	2. Start il_trafficgen (as responder)in another terminal
+	cd /opt/il_trafficgen/pktgen
+	./il_nperf_cli.sh –r
+
+	Wait for the il_trafficgen command prompt to appear on screen.
+
+	3. To send uplink traffic
+	Send the following command to generate Uplink traffic(i.e., P0-Tx --> P1-Rx) on GENERATOR.
+	$ socat - TCP4:localhost:2222 < start_il_trafficgen.lua
+
+	4. To send downlink traffic
+	Send the following command to generate Downlink traffic(i.e., P0-Rx <-- P1-Tx) on RESPONDER.
+	$ socat - TCP4:localhost:3333 < start_il_trafficgen.lua
+
+	5. To send traffic uplink and downlink run step 3 and 4 simultaneously.
+
+	6. Send the following command to quit both GENERATOR and RESPONDER.
+	$ socat - TCP4:localhost:2222 < quit_il_trafficgen.lua ; socat - TCP4:localhost:3333 < quit_il_trafficgen.lua
 
 Uninstall il_trafficgen
 =========================

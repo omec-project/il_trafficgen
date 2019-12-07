@@ -930,7 +930,12 @@ static inline void
 cli_quit(void)
 {
 	fprintf(stderr, "Quiting....\n");
-	this_cli->quit_flag = 1;
+	if (this_cli)
+	  this_cli->quit_flag = 1;
+	else {
+	  scrn_destroy();
+	  exit(EXIT_SUCCESS);
+	}
 }
 
 void cli_set_lua_callback( int(*func)(void *, const char *));

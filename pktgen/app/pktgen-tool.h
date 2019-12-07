@@ -99,6 +99,8 @@ void get_opkts_info(uint16_t pid, uint64_t *opkts_per_sec,
               uint64_t *tot_max_opkts_per_sec, uint64_t *tot_obps_per_sec);
 int parse_user_config(void);
 void* send_stats_data(void *arg);
+void start_gtp_traffic(int sig __rte_unused);
+void quit_gtp_traffic(int sig __rte_unused);
 #ifdef PCAP_GEN
 void dump_pcap(struct rte_mbuf *m, uint8_t pid);
 pcap_dumper_t *init_pcap(char *pcap_filename);
