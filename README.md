@@ -139,15 +139,18 @@ Run 'il_nperf_cli.sh' located in /opt/il_trafficgen/pktgen
 	3. To send uplink traffic
 	Send the following command to generate Uplink traffic(i.e., P0-Tx --> P1-Rx) on GENERATOR.
 	$ socat - TCP4:localhost:2222 < start_il_trafficgen.lua
+	One can also start packet generation by sending SIGUSR1 signal to the process.
 
 	4. To send downlink traffic
 	Send the following command to generate Downlink traffic(i.e., P0-Rx <-- P1-Tx) on RESPONDER.
 	$ socat - TCP4:localhost:3333 < start_il_trafficgen.lua
+	One can also start packet generation by sending SIGUSR1 signal to the process.
 
 	5. To send traffic uplink and downlink run step 3 and 4 simultaneously.
 
 	6. Send the following command to quit both GENERATOR and RESPONDER.
 	$ socat - TCP4:localhost:2222 < quit_il_trafficgen.lua ; socat - TCP4:localhost:3333 < quit_il_trafficgen.lua
+	One can also quit the process(es) by sending SIGUSR2 signal(s).
 
 Uninstall il_trafficgen
 =========================

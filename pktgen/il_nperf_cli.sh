@@ -1,18 +1,21 @@
 #!/bin/bash
 source autotest/user_input.cfg
+GEN_PORT=2222
+RESP_PORT=3333
+
 IFS='-' read -r -a cores <<< $core_list
 if [[ $1 == "-g" ]] || [[ $1 == "--generator" ]]; then
 	#s1u_cores="$(( ${cores[0]}+1 )).0"
 	s1u_cores="[$((${cores[0]}+1)):$((${cores[0]}+2))].0"
 	cmd="./app/x86_64-native-linuxapp-gcc/pktgen -l $core_list -n 4 --proc-type auto  \
 		--log-level 7 --socket-mem $NUMA0_MEM,$NUMA1_MEM --file-prefix s1u_pg -w $s1u_port -- -t -T     \
-		-N -m $s1u_cores -f ./autotest/input.txt -f themes/black-yellow.theme -g 127.0.0.1:2222"
+		-N -m $s1u_cores -f ./autotest/input.txt -f themes/black-yellow.theme -g 127.0.0.1:$GEN_PORT"
 elif [[ $1 == "-r" ]] || [[ $1 == "--responder" ]]; then
 	#sgi_cores="[$(( ${cores[0]}+5 ))-$(( ${cores[0]}+6)):$(( ${cores[0]}+7 ))-$(( ${cores[0]}+8))].0"
 	sgi_cores="[$((${cores[0]}+3)):$((${cores[0]}+4))].0"
 	cmd="./app/x86_64-native-linuxapp-gcc/pktgen -l $core_list -n 4 --proc-type auto  \
 		--log-level 7 --socket-mem $NUMA0_MEM,$NUMA1_MEM --file-prefix sgi_pg -w $sgi_port -- -r -T     \
-		-N -m $sgi_cores -f ./autotest/input.txt -f themes/black-yellow.theme -g 127.0.0.1:3333"
+		-N -m $sgi_cores -f ./autotest/input.txt -f themes/black-yellow.theme -g 127.0.0.1:$RESP_PORT"
 elif [[ $1 == "-rs" ]] || [[ $1 == "--responder_as_reflector" ]]; then
 	sgi_cores="$(( ${cores[0]}+3 )).0"
 	cmd="./app/x86_64-native-linuxapp-gcc/pktgen -l $core_list -n 4 --proc-type auto  \
