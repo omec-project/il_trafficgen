@@ -25,6 +25,8 @@
 #include <lualib.h>
 
 #include <cli_help.h>
+#include <cli.h>
+#include "pktgen-interface.h"
 
 #ifndef __INTEL_COMPILER
 #pragma GCC diagnostic ignored "-Wcast-qual"
@@ -840,6 +842,50 @@ pktgen_stop(lua_State *L) {
 
 	foreach_port(portlist,
 	             pktgen_stop_transmitting(info) );
+	return 0;
+}
+
+/**************************************************************************//**
+ *
+ * pktgen_cli_quit - Quit the pktgen program
+ *
+ * DESCRIPTION
+ * Gracefully terminates the application
+ *
+ * RETURNS: N/A
+ *
+ * SEE ALSO:
+ */
+
+static int
+pktgen_cli_quit(lua_State *L) {
+	RTE_SET_USED(L);
+	if (traffic_gen_as == IL_TRAFFIC_GEN) {
+		if (pktgen_fp != NULL) {
+			/* Get S1U stats */
+			uint16_t rx_cnt = pktgen.l2p->ports[0].rx_qid;
+			uint16_t tx_cnt = pktgen.l2p->ports[0].tx_qid;;
+			memset(&s1u_stats_data, 0, sizeof(s1u_stats_data));
+			uint8_t i = 0;
+			for (i = 0; i < rx_cnt; ++i) {
+				s1u_stats_data.rx_cnt += pid_rx_tx_cnts[0].rx_qid_cnts[i];
+			}
+			for (i = 0; i < tx_cnt; ++i) {
+				s1u_stats_data.tx_cnt += pid_rx_tx_cnts[0].tx_qid_cnts[i];
+			}
+
+			/* Get SGI stats */
+			char data_req = 'a';
+			udp_send_socket(&data_req, 1);
+			if (udp_recv_socket((void*)&sgi_stats_data,
+					    sizeof(sgi_stats_data)) < 0) {
+				printf("Failed to recv message!!!\n");
+			}
+			get_tx_rx_counts();
+			fclose(pktgen_fp);
+		}
+	}
+	quit_gtp_traffic(0);
 	return 0;
 }
 
@@ -3387,6 +3433,7 @@ static const luaL_Reg pktgenlib[] = {
 	{"start",         pktgen_start},/* Start a set of ports sending packets */
 	{"stop",          pktgen_stop},	/* Stop a set of ports sending packets */
 
+	{"quit",	  pktgen_cli_quit}, /* Quit the application */
 	/* Set the single packet value on main screen */
 	{"set_mac",       pktgen_set_mac},	/* Set the MAC address for a port */
 	{"set_ipaddr",    pktgen_set_ip_addr},	/* Set the src and dst IP addresses */

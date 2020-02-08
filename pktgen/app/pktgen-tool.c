@@ -291,6 +291,9 @@ int parse_user_config(void) {
 
   if (config_lookup_int(&cfg, "enable_gtpu", &val)) {
     enable_gtpu = val;
+    /* register user additional user signals in case pktgen needs to handled via signals */
+    signal(SIGUSR1, start_gtp_traffic);
+    signal(SIGUSR2, quit_gtp_traffic);
     if (enable_gtpu == 1) {
       printf("GTP-U packets handling is enabled\n");
     }
@@ -416,6 +419,40 @@ void stop_pkt_frwding(int sig __rte_unused) {
   start_stop_cmd(2, str);
   printf("Packet transmission stopped. Press ENTER.\n");
   is_first_tx = true;
+}
+
+/* Function: start_gtp_traffic
+ * Input param: None
+ * Output param: None
+ * Return values: None
+ */
+void start_gtp_traffic(int sig __rte_unused) {
+  char *str[] = { strdup("start"), strdup("0") };
+  start_stop_cmd(2, str);
+  printf("Starting...\n");
+  free(str[0]);
+  free(str[1]);
+}
+
+/* Function: quit_gtp_traffic
+ * Input param: None
+ * Output param: None
+ * Return values: None
+ */
+void quit_gtp_traffic(int sig __rte_unused) {
+  char *str1[] = { strdup("stop"), strdup("0") };
+  char *str2[] = { strdup("stop"), strdup("1") };
+  start_stop_cmd(2, str1);
+  printf("Stopping...\n");
+  start_stop_cmd(2, str2);
+  printf("Stopping...\n");
+  sleep(1);
+  cli_quit();
+  printf("Quitting...\n");
+  free(str1[0]);
+  free(str1[1]);
+  free(str2[0]);
+  free(str2[1]);
 }
 
 /* Function: get_tx_rx_counts
