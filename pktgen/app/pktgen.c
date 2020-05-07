@@ -248,6 +248,21 @@ pktgen_latency_apply(port_info_t *info __rte_unused,
 
 		latency->timestamp  = rte_rdtsc_precise();
 		latency->magic      = LATENCY_MAGIC;
+
+        // Ignore L4 checksum
+        char *l4_hdr, *p = rte_pktmbuf_mtod(mbufs[i], char *);
+        p += sizeof(struct ether_hdr);
+        p += (info->seq_pkt[SINGLE_PKT].ethType == ETHER_TYPE_IPv4) ?
+            sizeof(struct ipv4_hdr) : sizeof(struct ipv6_hdr);
+        l4_hdr = p;
+
+        if (info->seq_pkt[SINGLE_PKT].ipProto == IPPROTO_UDP) {
+            struct udp_hdr *udp_hdr = (struct udp_hdr*)l4_hdr;
+            udp_hdr->dgram_cksum = 0;
+        } else {
+            struct tcp_hdr *tcp_hdr = (struct tcp_hdr*)l4_hdr;
+            tcp_hdr->cksum = 0;
+        }
 	}
 }
 
